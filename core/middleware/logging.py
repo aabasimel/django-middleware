@@ -1,5 +1,5 @@
 import logging
-
+import time
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
 formatter = logging.Formatter(fmt="%(asctime)s %(levelname)s; %(message)s")
@@ -13,7 +13,7 @@ class LoggingMiddleware:
 
     def __call__(self, request):
         # Before view (pre-processing)
-
+        start_time = time.time()
         request_data = {
             "method": request.method,
             "ip_address": request.META.get("REMOTE_ADDR"),
@@ -23,7 +23,15 @@ class LoggingMiddleware:
         logger.info(request_data)
 
         response = self.get_response(request)
-        logger.info(f"Outgoing response: {response.status_code}")  # <-- also module-level
+        duration = time.time()- start_time
+
+        response_dict ={
+            "status_code": response.status_code,
+            "duration": duration
+
+        }
+        # After view (post-processing)  
+        logger.info(response_dict)
 
        
 
