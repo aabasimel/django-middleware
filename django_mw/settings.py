@@ -130,11 +130,15 @@ BANNED_IPS = []
 AUTH_USER_MODEL = 'core.User'
 # Cache configuration for geolocation data
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",  # Redis server URL, DB 1
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
 }
+
 
 # IP Geolocation settings
 IPINFO_API_KEY = os.environ.get('IPINFO_API_KEY', '')
@@ -142,4 +146,43 @@ IPINFO_API_KEY = os.environ.get('IPINFO_API_KEY', '')
 # Or for django-ipgeolocation
 IP_GEOLOCATION_SETTINGS = {
     'API_KEY': os.environ.get('IP_GEOLOCATION_API_KEY', ''),
+}
+
+# Rate limiting configuration
+RATELIMIT_ENABLE = True
+
+# Cache configuration for rate limiting (required)
+
+# Rate limit settings
+RATELIMIT_VIEW = 'ip_tracking.views.rate_limit_exceeded'  # Custom view for rate limit exceeded
+
+# Custom rate limit groups
+RATELIMIT_GROUPS = {
+    'sensitive': {
+        'key': 'user_or_ip',
+        'rate': '10/m',  # 10 requests per minute for authenticated users
+        'method': ['POST', 'PUT', 'DELETE'],
+        'block': True,
+    },
+    'public_api': {
+        'key': 'ip', 
+        'rate': '5/m',  # 5 requests per minute for anonymous users
+        'method': 'ALL',
+        'block': True,
+    }
+}
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Using Redis as broker
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+
+CELERY_BEAT_SCHEDULE = {
+    'detect-suspicious-ips-hourly': {
+        'task': 'core.tasks.detect_suspicious_ips',
+        'schedule': 3600.0,  # Every hour (3600 seconds)
+    }
 }
