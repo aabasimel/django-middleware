@@ -18,7 +18,7 @@ class RequestLoggingMiddleware:
         self.get_response = get_response
         self.log_file_path = 'result.txt'  
         self._ensure_log_file() 
-        self.cache_stats = {'hits': 0, 'misses': 0}  # Add this
+        self.cache_stats = {'hits': 0, 'misses': 0} 
         self._ensure_log_file() 
 
     def _ensure_log_file(self):
