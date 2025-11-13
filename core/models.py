@@ -52,3 +52,36 @@ class BlockedIP(models.Model):
          
         status = "Active" if self.is_active else "Inactive"
         return f"{self.ip_address} - {status} - {self.created_at}"
+class SuspiciousIP(models.Model):
+    REASON_CHOICES = [
+        ('high_volume', 'High request volume (>100/hour)'),
+        ('sensitive_paths', 'Accessing sensitive paths'),
+        ('multiple_reasons', 'Multiple suspicious activities'),
+    ]
+    
+    ip_address = models.GenericIPAddressField(unique=True)
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES)
+    detected_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    details = models.JSONField(default=dict, blank=True) 
+    
+    class Meta:
+        db_table = 'suspicious_ips'
+        verbose_name = 'Suspicious IP'
+        verbose_name_plural = 'Suspicious IPs'
+        ordering = ['-detected_at']
+        indexes = [
+            models.Index(fields=['ip_address']),
+            models.Index(fields=['detected_at']),
+            models.Index(fields=['is_active']),
+        ]
+        
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        return f"{self.ip_address} - {self.get_reason_display()} - {status}"
+    
+    @classmethod
+    def is_suspicious(cls, ip_address):
+        """Check if an IP is currently flagged as suspicious"""
+        return cls.objects.filter(ip_address=ip_address, is_active=True).exists()
+    
