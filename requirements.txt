@@ -1,2 +1,4 @@
 django
-django-ipgeolocation
+django-ratelimit
+django-redis
+celery[redis]
